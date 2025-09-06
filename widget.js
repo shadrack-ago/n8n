@@ -880,6 +880,9 @@
                 }
             }];
 
+            console.log('Loading existing session from:', settings.webhook.url);
+            console.log('Session load data:', sessionLoadData);
+            
             const sessionResponse = await fetch(settings.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -888,7 +891,14 @@
                 body: JSON.stringify(sessionLoadData)
             });
             
+            console.log('Session load response status:', sessionResponse.status);
+            
+            if (!sessionResponse.ok) {
+                throw new Error(`Server error: ${sessionResponse.status} ${sessionResponse.statusText}`);
+            }
+            
             const sessionResponseData = await sessionResponse.json();
+            console.log('Session load response data:', sessionResponseData);
             
             // Remove typing indicator
             messagesContainer.removeChild(typingIndicator);
@@ -925,7 +935,16 @@
             // Show welcome back message even if session loading fails
             const welcomeMessage = document.createElement('div');
             welcomeMessage.className = 'chat-bubble bot-bubble';
-            welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
+            
+            if (error.message.includes('500')) {
+                welcomeMessage.innerHTML = `
+                    <strong>Welcome back, ${sessionData.userName}!</strong><br><br>
+                    <em>Note: There's a server issue preventing us from loading your previous conversation, but you can still chat with me!</em>
+                `;
+            } else {
+                welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
+            }
+            
             messagesContainer.appendChild(welcomeMessage);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -1062,6 +1081,9 @@
             messagesContainer.appendChild(typingIndicator);
             
             // Load session
+            console.log('Sending session load request to:', settings.webhook.url);
+            console.log('Session data:', sessionData);
+            
             const sessionResponse = await fetch(settings.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -1070,7 +1092,14 @@
                 body: JSON.stringify(sessionData)
             });
             
+            console.log('Session response status:', sessionResponse.status);
+            
+            if (!sessionResponse.ok) {
+                throw new Error(`Server error: ${sessionResponse.status} ${sessionResponse.statusText}`);
+            }
+            
             const sessionResponseData = await sessionResponse.json();
+            console.log('Session response data:', sessionResponseData);
             
             // Send user info as first message
             const userInfoMessage = `Name: ${name}\nEmail: ${email}`;
@@ -1088,6 +1117,9 @@
             };
             
             // Send user info
+            console.log('Sending user info request to:', settings.webhook.url);
+            console.log('User info data:', userInfoData);
+            
             const userInfoResponse = await fetch(settings.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -1096,7 +1128,14 @@
                 body: JSON.stringify(userInfoData)
             });
             
+            console.log('User info response status:', userInfoResponse.status);
+            
+            if (!userInfoResponse.ok) {
+                throw new Error(`Server error: ${userInfoResponse.status} ${userInfoResponse.statusText}`);
+            }
+            
             const userInfoResponseData = await userInfoResponse.json();
+            console.log('User info response data:', userInfoResponseData);
             
             // Remove typing indicator
             messagesContainer.removeChild(typingIndicator);
@@ -1124,10 +1163,27 @@
                 messagesContainer.removeChild(indicator);
             }
             
-            // Show error message
+            // Show error message with more specific information
             const errorMessage = document.createElement('div');
             errorMessage.className = 'chat-bubble bot-bubble';
-            errorMessage.textContent = "Sorry, I couldn't connect to the server. Please try again later.";
+            
+            if (error.message.includes('500')) {
+                errorMessage.innerHTML = `
+                    <strong>Server Error (500)</strong><br>
+                    There's an issue with our chat server. This could be:<br>
+                    • n8n workflow not running<br>
+                    • Webhook URL incorrect<br>
+                    • Server configuration issue<br><br>
+                    Please check your n8n setup and try again.
+                `;
+            } else {
+                errorMessage.innerHTML = `
+                    <strong>Connection Error</strong><br>
+                    ${error.message}<br><br>
+                    Please check your internet connection and try again.
+                `;
+            }
+            
             messagesContainer.appendChild(errorMessage);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -1167,6 +1223,9 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
         try {
+            console.log('Sending message to:', settings.webhook.url);
+            console.log('Message data:', requestData);
+            
             const response = await fetch(settings.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -1175,7 +1234,14 @@
                 body: JSON.stringify(requestData)
             });
             
+            console.log('Message response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+            
             const responseData = await response.json();
+            console.log('Message response data:', responseData);
             
             // Remove typing indicator
             messagesContainer.removeChild(typingIndicator);

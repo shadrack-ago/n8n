@@ -752,20 +752,32 @@
     // Retrieve user session data from localStorage
     function getUserSession() {
         try {
+            console.log('Attempting to get session from localStorage with key:', STORAGE_KEY);
             const sessionData = localStorage.getItem(STORAGE_KEY);
-            if (!sessionData) return null;
+            console.log('Raw session data from localStorage:', sessionData);
+            
+            if (!sessionData) {
+                console.log('No session data found in localStorage');
+                return null;
+            }
 
             const parsedData = JSON.parse(sessionData);
+            console.log('Parsed session data:', parsedData);
+            
             const now = Date.now();
             const sessionAge = now - parsedData.timestamp;
             const expiryTime = SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+            
+            console.log('Session age:', sessionAge, 'ms, Expiry time:', expiryTime, 'ms');
 
             // Check if session has expired
             if (sessionAge > expiryTime) {
+                console.log('Session has expired, clearing...');
                 clearUserSession();
                 return null;
             }
 
+            console.log('Valid session found');
             return parsedData;
         } catch (error) {
             console.warn('Failed to retrieve session data:', error);
@@ -785,10 +797,14 @@
 
     // Check if user has existing session and populate form if needed
     function checkExistingSession() {
+        console.log('Checking for existing session...');
         const existingSession = getUserSession();
+        console.log('Retrieved session data:', existingSession);
+        
         if (existingSession) {
             // Restore conversation ID
             conversationId = existingSession.sessionId;
+            console.log('Restored conversation ID:', conversationId);
             
             // Populate form fields with existing data
             if (nameInput && emailInput) {
@@ -798,6 +814,7 @@
             
             return existingSession;
         }
+        console.log('No existing session found');
         return null;
     }
 
@@ -1193,6 +1210,28 @@
         messageTextarea.style.height = (messageTextarea.scrollHeight > 120 ? 120 : messageTextarea.scrollHeight) + 'px';
     }
 
+    // Check for existing session on widget initialization
+    function initializeWidget() {
+        const existingSession = checkExistingSession();
+        if (existingSession) {
+            // User has existing session, update the welcome message and button text
+            const welcomeTitle = chatWindow.querySelector('.chat-welcome-title');
+            if (welcomeTitle) {
+                welcomeTitle.textContent = `Welcome back, ${existingSession.userName}!`;
+            }
+            
+            const startButtonText = startChatButton.querySelector('svg').parentNode;
+            const buttonText = startButtonText.childNodes[startButtonText.childNodes.length - 1];
+            if (buttonText && buttonText.textContent) {
+                buttonText.textContent = 'Continue chatting';
+            }
+            console.log('Existing session found for user:', existingSession.userName);
+        } else {
+            // New user, show normal welcome screen
+            console.log('No existing session found');
+        }
+    }
+
     // Event listeners
     startChatButton.addEventListener('click', showRegistrationForm);
     registrationForm.addEventListener('submit', handleRegistration);
@@ -1236,4 +1275,7 @@
     if (clearSessionBtn) {
         clearSessionBtn.addEventListener('click', clearSession);
     }
+
+    // Initialize the widget
+    initializeWidget();
 })();

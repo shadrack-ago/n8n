@@ -34,12 +34,13 @@
             font-family: 'Poppins', sans-serif;
         }
 
-        .chat-assist-widget .chat-window {
+         .chat-assist-widget .chat-window {
             position: fixed;
             bottom: 90px;
             z-index: 1000;
             width: 380px;
-            height: 580px;
+            /*  height: 580px; */
+             height: 580px;
             background: var(--chat-color-surface);
             border-radius: var(--chat-radius-lg);
             box-shadow: var(--chat-shadow-lg);
@@ -49,8 +50,27 @@
             flex-direction: column;
             transition: var(--chat-transition);
             opacity: 0;
+            height: min(520px, calc(100vh - 120px));
+            max-height: calc(100vh - 120px);
             transform: translateY(20px) scale(0.95);
         }
+        @media (max-width: 768px) {
+    .chat-assist-widget .chat-window {
+        width: calc(100vw - 40px);
+        left: 20px;
+        right: 20px;
+    }
+}
+
+/* For smaller mobile screens */
+@media (max-width: 480px) {
+    .chat-assist-widget .chat-window {
+        width: calc(100vw - 20px) ;
+        left: 10px ;
+        right: 10px ;
+        bottom: 80px ;
+    }
+}
 
         .chat-assist-widget .chat-window.right-side {
             right: 20px;
@@ -568,8 +588,8 @@
             welcomeText: '',
             responseTimeText: '',
             poweredBy: {
-                text: 'Powered by n8n',
-                link: 'https://n8n.partnerlinks.io/fabimarkl'
+                text: 'Powered by CustomCX',
+                link: 'https://customcx.com/'
             }
         },
         style: {

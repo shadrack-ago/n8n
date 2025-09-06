@@ -394,6 +394,28 @@
             opacity: 1;
         }
 
+        .chat-assist-widget .chat-footer-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-assist-widget .clear-session-btn {
+            background: none;
+            border: none;
+            color: var(--chat-color-text-light);
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: var(--chat-transition);
+            font-family: inherit;
+        }
+
+        .chat-assist-widget .clear-session-btn:hover {
+            color: var(--chat-color-primary);
+        }
+
         .chat-assist-widget .suggested-questions {
             display: flex;
             flex-direction: column;
@@ -643,7 +665,10 @@
                 </button>
             </div>
             <div class="chat-footer">
-                <a class="chat-footer-link" href="${settings.branding.poweredBy.link}" target="_blank">${settings.branding.poweredBy.text}</a>
+                <div class="chat-footer-actions">
+                    <button class="clear-session-btn" style="display: none;">Clear Session</button>
+                    <a class="chat-footer-link" href="${settings.branding.poweredBy.link}" target="_blank">${settings.branding.poweredBy.text}</a>
+                </div>
             </div>
         </div>
     `;
@@ -670,6 +695,7 @@
     const messagesContainer = chatWindow.querySelector('.chat-messages');
     const messageTextarea = chatWindow.querySelector('.chat-textarea');
     const sendButton = chatWindow.querySelector('.chat-submit');
+    const clearSessionBtn = chatWindow.querySelector('.clear-session-btn');
     
     // Registration form elements
     const registrationForm = chatWindow.querySelector('.registration-form');
@@ -680,9 +706,79 @@
     const nameError = chatWindow.querySelector('#name-error');
     const emailError = chatWindow.querySelector('#email-error');
 
+    // Local storage utilities for session management
+    const STORAGE_KEY = 'n8n_chat_widget_session';
+    const SESSION_EXPIRY_DAYS = 30; // Session expires after 30 days
+
     // Helper function to generate unique session ID
     function createSessionId() {
         return crypto.randomUUID();
+    }
+
+    // Save user session data to localStorage
+    function saveUserSession(userData) {
+        try {
+            const sessionData = {
+                ...userData,
+                timestamp: Date.now(),
+                sessionId: conversationId
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+        } catch (error) {
+            console.warn('Failed to save session data:', error);
+        }
+    }
+
+    // Retrieve user session data from localStorage
+    function getUserSession() {
+        try {
+            const sessionData = localStorage.getItem(STORAGE_KEY);
+            if (!sessionData) return null;
+
+            const parsedData = JSON.parse(sessionData);
+            const now = Date.now();
+            const sessionAge = now - parsedData.timestamp;
+            const expiryTime = SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+
+            // Check if session has expired
+            if (sessionAge > expiryTime) {
+                clearUserSession();
+                return null;
+            }
+
+            return parsedData;
+        } catch (error) {
+            console.warn('Failed to retrieve session data:', error);
+            clearUserSession();
+            return null;
+        }
+    }
+
+    // Clear user session data from localStorage
+    function clearUserSession() {
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            console.warn('Failed to clear session data:', error);
+        }
+    }
+
+    // Check if user has existing session and populate form if needed
+    function checkExistingSession() {
+        const existingSession = getUserSession();
+        if (existingSession) {
+            // Restore conversation ID
+            conversationId = existingSession.sessionId;
+            
+            // Populate form fields with existing data
+            if (nameInput && emailInput) {
+                nameInput.value = existingSession.userName || '';
+                emailInput.value = existingSession.userId || '';
+            }
+            
+            return existingSession;
+        }
+        return null;
     }
 
     // Create typing indicator element
@@ -708,10 +804,153 @@
         });
     }
 
-    // Show registration form
+    // Show registration form or skip to chat for returning users
     function showRegistrationForm() {
+        // Check for existing session first
+        const existingSession = checkExistingSession();
+        
+        if (existingSession) {
+            // User has existing session, skip registration and go directly to chat
+            startChatWithExistingSession(existingSession);
+        } else {
+            // New user, show registration form
+            chatWelcome.style.display = 'none';
+            userRegistration.classList.add('active');
+        }
+    }
+
+    // Start chat with existing session data
+    async function startChatWithExistingSession(sessionData) {
+        // Hide welcome screen and show chat interface
         chatWelcome.style.display = 'none';
-        userRegistration.classList.add('active');
+        userRegistration.classList.remove('active');
+        chatBody.classList.add('active');
+        showClearSessionButton();
+        
+        // Show typing indicator
+        const typingIndicator = createTypingIndicator();
+        messagesContainer.appendChild(typingIndicator);
+        
+        try {
+            // Load previous session from n8n
+            const sessionLoadData = [{
+                action: "loadPreviousSession",
+                sessionId: sessionData.sessionId,
+                route: settings.webhook.route,
+                metadata: {
+                    userId: sessionData.userId,
+                    userName: sessionData.userName
+                }
+            }];
+
+            const sessionResponse = await fetch(settings.webhook.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(sessionLoadData)
+            });
+            
+            const sessionResponseData = await sessionResponse.json();
+            
+            // Remove typing indicator
+            messagesContainer.removeChild(typingIndicator);
+            
+            // Display welcome back message or previous conversation
+            const welcomeMessage = document.createElement('div');
+            welcomeMessage.className = 'chat-bubble bot-bubble';
+            
+            // If there's existing conversation data, show it, otherwise show welcome back message
+            if (sessionResponseData && sessionResponseData.length > 0) {
+                // Load previous conversation history
+                loadPreviousConversation(sessionResponseData);
+            } else {
+                // Show welcome back message
+                welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
+                messagesContainer.appendChild(welcomeMessage);
+            }
+            
+            // Add suggested questions if available
+            if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
+                addSuggestedQuestions();
+            }
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } catch (error) {
+            console.error('Session loading error:', error);
+            
+            // Remove typing indicator if it exists
+            const indicator = messagesContainer.querySelector('.typing-indicator');
+            if (indicator) {
+                messagesContainer.removeChild(indicator);
+            }
+            
+            // Show welcome back message even if session loading fails
+            const welcomeMessage = document.createElement('div');
+            welcomeMessage.className = 'chat-bubble bot-bubble';
+            welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
+            messagesContainer.appendChild(welcomeMessage);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+
+    // Load previous conversation history
+    function loadPreviousConversation(conversationData) {
+        // This function can be customized based on how your n8n workflow returns conversation history
+        // For now, we'll show a simple welcome back message
+        const welcomeMessage = document.createElement('div');
+        welcomeMessage.className = 'chat-bubble bot-bubble';
+        welcomeMessage.innerHTML = linkifyText("Welcome back! Here's where we left off...");
+        messagesContainer.appendChild(welcomeMessage);
+        
+        // You can extend this to parse and display actual conversation history
+        // if your n8n workflow provides it in the response
+    }
+
+    // Add suggested questions to the chat
+    function addSuggestedQuestions() {
+        const suggestedQuestionsContainer = document.createElement('div');
+        suggestedQuestionsContainer.className = 'suggested-questions';
+        
+        settings.suggestedQuestions.forEach(question => {
+            const questionButton = document.createElement('button');
+            questionButton.className = 'suggested-question-btn';
+            questionButton.textContent = question;
+            questionButton.addEventListener('click', () => {
+                submitMessage(question);
+                // Remove the suggestions after clicking
+                if (suggestedQuestionsContainer.parentNode) {
+                    suggestedQuestionsContainer.parentNode.removeChild(suggestedQuestionsContainer);
+                }
+            });
+            suggestedQuestionsContainer.appendChild(questionButton);
+        });
+        
+        messagesContainer.appendChild(suggestedQuestionsContainer);
+    }
+
+    // Clear user session and reset to welcome screen
+    function clearSession() {
+        clearUserSession();
+        conversationId = '';
+        
+        // Clear messages
+        messagesContainer.innerHTML = '';
+        
+        // Hide chat body and show welcome screen
+        chatBody.classList.remove('active');
+        chatWelcome.style.display = 'block';
+        userRegistration.classList.remove('active');
+        
+        // Hide clear session button
+        clearSessionBtn.style.display = 'none';
+    }
+
+    // Show clear session button when chat is active
+    function showClearSessionButton() {
+        if (clearSessionBtn) {
+            clearSessionBtn.style.display = 'block';
+        }
     }
 
     // Validate email format
@@ -758,6 +997,12 @@
         // Initialize conversation with user data
         conversationId = createSessionId();
         
+        // Save user session data to localStorage
+        saveUserSession({
+            userId: email,
+            userName: name
+        });
+        
         // First, load the session
         const sessionData = [{
             action: "loadPreviousSession",
@@ -773,6 +1018,7 @@
             // Hide registration form, show chat interface
             userRegistration.classList.remove('active');
             chatBody.classList.add('active');
+            showClearSessionButton();
             
             // Show typing indicator
             const typingIndicator = createTypingIndicator();
@@ -826,26 +1072,9 @@
             botMessage.innerHTML = linkifyText(messageText);
             messagesContainer.appendChild(botMessage);
             
-            // Add sample questions if configured
+            // Add suggested questions if configured
             if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
-                const suggestedQuestionsContainer = document.createElement('div');
-                suggestedQuestionsContainer.className = 'suggested-questions';
-                
-                settings.suggestedQuestions.forEach(question => {
-                    const questionButton = document.createElement('button');
-                    questionButton.className = 'suggested-question-btn';
-                    questionButton.textContent = question;
-                    questionButton.addEventListener('click', () => {
-                        submitMessage(question);
-                        // Remove the suggestions after clicking
-                        if (suggestedQuestionsContainer.parentNode) {
-                            suggestedQuestionsContainer.parentNode.removeChild(suggestedQuestionsContainer);
-                        }
-                    });
-                    suggestedQuestionsContainer.appendChild(questionButton);
-                });
-                
-                messagesContainer.appendChild(suggestedQuestionsContainer);
+                addSuggestedQuestions();
             }
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -873,9 +1102,10 @@
         
         isWaitingForResponse = true;
         
-        // Get user info if available
-        const email = nameInput ? nameInput.value.trim() : "";
-        const name = emailInput ? emailInput.value.trim() : "";
+        // Get user info from session or form
+        const existingSession = getUserSession();
+        const email = existingSession ? existingSession.userId : (emailInput ? emailInput.value.trim() : "");
+        const name = existingSession ? existingSession.userName : (nameInput ? nameInput.value.trim() : "");
         
         const requestData = {
             action: "sendMessage",
@@ -981,4 +1211,9 @@
             chatWindow.classList.remove('visible');
         });
     });
+
+    // Clear session button functionality
+    if (clearSessionBtn) {
+        clearSessionBtn.addEventListener('click', clearSession);
+    }
 })();

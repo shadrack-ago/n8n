@@ -954,10 +954,7 @@
                 action: "loadPreviousSession",
                 sessionId: sessionData.sessionId,
                 route: settings.webhook.route,
-                metadata: {
-                    userId: sessionData.userId,
-                    userName: sessionData.userName
-                }
+                chatInput: `Load Session for User: ${sessionData.userName} (${sessionData.userId})`
             }];
 
             console.log('Loading existing session from:', settings.webhook.url);
@@ -1148,10 +1145,7 @@
             action: "loadPreviousSession",
             sessionId: conversationId,
             route: settings.webhook.route,
-            metadata: {
-                userId: email,
-                userName: name
-            }
+            chatInput: `Load Session for User: ${name} (${email})`
         }];
 
         try {
@@ -1185,19 +1179,14 @@
             const sessionResponseData = await sessionResponse.json();
             console.log('Session response data:', sessionResponseData);
             
-            // Send user info as first message
-            const userInfoMessage = `Name: ${name}\nEmail: ${email}`;
+            // Send user info as first message - combine everything into chatInput
+            const userInfoMessage = `User Registration:\nName: ${name}\nEmail: ${email}\nSessionId: ${conversationId}\nUserId: ${email}\nUserName: ${name}\nIsUserInfo: true`;
             
             const userInfoData = {
                 action: "sendMessage",
                 sessionId: conversationId,
                 route: settings.webhook.route,
-                chatInput: userInfoMessage,
-                metadata: {
-                    userId: email,
-                    userName: name,
-                    isUserInfo: true
-                }
+                chatInput: userInfoMessage
             };
             
             // Send user info
@@ -1284,15 +1273,16 @@
         const email = existingSession ? existingSession.userId : (emailInput ? emailInput.value.trim() : "");
         const name = existingSession ? existingSession.userName : (nameInput ? nameInput.value.trim() : "");
         
+        // Include user info in the message if available
+        const messageWithUserInfo = email && name ? 
+            `[User: ${name} (${email})]\n${messageText}` : 
+            messageText;
+            
         const requestData = {
             action: "sendMessage",
             sessionId: conversationId,
             route: settings.webhook.route,
-            chatInput: messageText,
-            metadata: {
-                userId: email,
-                userName: name
-            }
+            chatInput: messageWithUserInfo
         };
 
         // Display user message

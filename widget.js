@@ -686,7 +686,6 @@
             </div>
             <div class="chat-footer">
                 <div class="chat-footer-actions">
-                    <button class="clear-session-btn" style="display: none;">Clear Session</button>
                     <a class="chat-footer-link" href="${settings.branding.poweredBy.link}" target="_blank">${settings.branding.poweredBy.text}</a>
                 </div>
             </div>
@@ -715,7 +714,7 @@
     const messagesContainer = chatWindow.querySelector('.chat-messages');
     const messageTextarea = chatWindow.querySelector('.chat-textarea');
     const sendButton = chatWindow.querySelector('.chat-submit');
-    const clearSessionBtn = chatWindow.querySelector('.clear-session-btn');
+    
     
     // Registration form elements
     const registrationForm = chatWindow.querySelector('.registration-form');
@@ -936,95 +935,33 @@
         }
     }
 
-    // Start chat with existing session data
+    // Start chat with existing session data (no server history load)
     async function startChatWithExistingSession(sessionData) {
         // Hide welcome screen and show chat interface
         chatWelcome.style.display = 'none';
         userRegistration.classList.remove('active');
         chatBody.classList.add('active');
         showClearSessionButton();
-        
-        // Show typing indicator
+
+        // Show brief welcome back message
         const typingIndicator = createTypingIndicator();
         messagesContainer.appendChild(typingIndicator);
-        
-        try {
-            // Load previous session from n8n
-            const sessionLoadData = [{
-                action: "loadPreviousSession",
-                sessionId: sessionData.sessionId,
-                route: settings.webhook.route,
-                chatInput: `Load Session for User: ${sessionData.userName} (${sessionData.userId})`
-            }];
 
-            console.log('Loading existing session from:', settings.webhook.url);
-            console.log('Session load data:', sessionLoadData);
-            
-            const sessionResponse = await fetch(settings.webhook.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(sessionLoadData)
-            });
-            
-            console.log('Session load response status:', sessionResponse.status);
-            
-            if (!sessionResponse.ok) {
-                throw new Error(`Server error: ${sessionResponse.status} ${sessionResponse.statusText}`);
-            }
-            
-            const sessionResponseData = await sessionResponse.json();
-            console.log('Session load response data:', sessionResponseData);
-            
-            // Remove typing indicator
-            messagesContainer.removeChild(typingIndicator);
-            
-            // Display welcome back message or previous conversation
-            const welcomeMessage = document.createElement('div');
-            welcomeMessage.className = 'chat-bubble bot-bubble';
-            
-            // If there's existing conversation data, show it, otherwise show welcome back message
-            if (sessionResponseData && sessionResponseData.length > 0) {
-                // Load previous conversation history
-                loadPreviousConversation(sessionResponseData);
-            } else {
-                // Show welcome back message
-                welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
-                messagesContainer.appendChild(welcomeMessage);
-            }
-            
-            // Add suggested questions if available
-            if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
-                addSuggestedQuestions();
-            }
-            
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        } catch (error) {
-            console.error('Session loading error:', error);
-            
-            // Remove typing indicator if it exists
-            const indicator = messagesContainer.querySelector('.typing-indicator');
-            if (indicator) {
-                messagesContainer.removeChild(indicator);
-            }
-            
-            // Show welcome back message even if session loading fails
-            const welcomeMessage = document.createElement('div');
-            welcomeMessage.className = 'chat-bubble bot-bubble';
-            
-            if (error.message.includes('500')) {
-                welcomeMessage.innerHTML = `
-                    <strong>Welcome back, ${sessionData.userName}!</strong><br><br>
-                    <em>Note: There's a server issue preventing us from loading your previous conversation, but you can still chat with me!</em>
-                `;
-            } else {
-                welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
-            }
-            
-            messagesContainer.appendChild(welcomeMessage);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        const welcomeMessage = document.createElement('div');
+        welcomeMessage.className = 'chat-bubble bot-bubble';
+        welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
+        
+        // Remove typing and append welcome
+        const indicator = messagesContainer.querySelector('.typing-indicator');
+        if (indicator) messagesContainer.removeChild(indicator);
+        messagesContainer.appendChild(welcomeMessage);
+
+        // Add suggested questions if available
+        if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
+            addSuggestedQuestions();
         }
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     // Load previous conversation history
@@ -1062,30 +999,10 @@
         messagesContainer.appendChild(suggestedQuestionsContainer);
     }
 
-    // Clear user session and reset to welcome screen
-    function clearSession() {
-        clearUserSession();
-        clearFormFilledStatus(); // Clear form filled status
-        conversationId = '';
-        
-        // Clear messages
-        messagesContainer.innerHTML = '';
-        
-        // Hide chat body and show welcome screen
-        chatBody.classList.remove('active');
-        chatWelcome.style.display = 'block';
-        userRegistration.classList.remove('active');
-        
-        // Hide clear session button
-        clearSessionBtn.style.display = 'none';
-    }
+    // Removed clear session feature for simpler UX
 
-    // Show clear session button when chat is active
-    function showClearSessionButton() {
-        if (clearSessionBtn) {
-            clearSessionBtn.style.display = 'block';
-        }
-    }
+    // No-op: clear session button removed
+    function showClearSessionButton() {}
 
     // Validate email format
     function isValidEmail(email) {
@@ -1140,13 +1057,7 @@
             userName: name
         });
         
-        // First, load the session
-        const sessionData = [{
-            action: "loadPreviousSession",
-            sessionId: conversationId,
-            route: settings.webhook.route,
-            chatInput: `Load Session for User: ${name} (${email})`
-        }];
+        // Skip loading previous session; proceed directly to chat UI
 
         try {
             // Hide registration form, show chat interface
@@ -1157,29 +1068,8 @@
             // Show typing indicator
             const typingIndicator = createTypingIndicator();
             messagesContainer.appendChild(typingIndicator);
-            
-            // Load session
-            console.log('Sending session load request to:', settings.webhook.url);
-            console.log('Session data:', sessionData);
-            
-            const sessionResponse = await fetch(settings.webhook.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(sessionData)
-            });
-            
-            console.log('Session response status:', sessionResponse.status);
-            
-            if (!sessionResponse.ok) {
-                throw new Error(`Server error: ${sessionResponse.status} ${sessionResponse.statusText}`);
-            }
-            
-            const sessionResponseData = await sessionResponse.json();
-            console.log('Session response data:', sessionResponseData);
-            
-            // Send user info as first message - combine everything into chatInput
+
+            // Send user info as first message - combine everything into chatInput (no prior session load)
             const userInfoMessage = `User Registration:\nName: ${name}\nEmail: ${email}\nSessionId: ${conversationId}\nUserId: ${email}\nUserName: ${name}\nIsUserInfo: true`;
             
             const userInfoData = {
@@ -1424,10 +1314,7 @@
         });
     });
 
-    // Clear session button functionality
-    if (clearSessionBtn) {
-        clearSessionBtn.addEventListener('click', clearSession);
-    }
+    // Clear session button removed
 
     // Initialize the widget
     initializeWidget();

@@ -728,6 +728,7 @@
 
     // Local storage utilities for session management
     const STORAGE_KEY = 'n8n_chat_widget_session';
+    const FORM_FILLED_KEY = 'n8n_chat_widget_form_filled';
     const SESSION_EXPIRY_DAYS = 30; // Session expires after 30 days
 
     // Helper function to generate unique session ID
@@ -795,6 +796,34 @@
         }
     }
 
+    // Mark that user has filled form
+    function markFormAsFilled() {
+        try {
+            localStorage.setItem(FORM_FILLED_KEY, 'true');
+        } catch (error) {
+            console.warn('Failed to save form filled status:', error);
+        }
+    }
+
+    // Check if user has filled form before
+    function hasUserFilledForm() {
+        try {
+            return localStorage.getItem(FORM_FILLED_KEY) === 'true';
+        } catch (error) {
+            console.warn('Failed to check form filled status:', error);
+            return false;
+        }
+    }
+
+    // Clear form filled status
+    function clearFormFilledStatus() {
+        try {
+            localStorage.removeItem(FORM_FILLED_KEY);
+        } catch (error) {
+            console.warn('Failed to clear form filled status:', error);
+        }
+    }
+
     // Check if user has existing session and populate form if needed
     function checkExistingSession() {
         console.log('Checking for existing session...');
@@ -849,10 +878,61 @@
         if (existingSession) {
             // User has existing session, skip registration and go directly to chat
             startChatWithExistingSession(existingSession);
+        } else if (hasUserFilledForm()) {
+            // User has filled form before but no saved session, go directly to chat
+            startChatWithoutSession();
         } else {
             // New user, show registration form
             chatWelcome.style.display = 'none';
             userRegistration.classList.add('active');
+        }
+    }
+
+    // Start chat without session data (for users who filled form before)
+    async function startChatWithoutSession() {
+        // Hide welcome screen and show chat interface
+        chatWelcome.style.display = 'none';
+        userRegistration.classList.remove('active');
+        chatBody.classList.add('active');
+        showClearSessionButton();
+        
+        // Show typing indicator
+        const typingIndicator = createTypingIndicator();
+        messagesContainer.appendChild(typingIndicator);
+        
+        try {
+            // Initialize conversation
+            conversationId = createSessionId();
+            
+            // Show welcome message
+            const welcomeMessage = document.createElement('div');
+            welcomeMessage.className = 'chat-bubble bot-bubble';
+            welcomeMessage.innerHTML = linkifyText("Welcome back! How can I help you today?");
+            messagesContainer.appendChild(welcomeMessage);
+            
+            // Add suggested questions if available
+            if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
+                addSuggestedQuestions();
+            }
+            
+            // Remove typing indicator
+            messagesContainer.removeChild(typingIndicator);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } catch (error) {
+            console.error('Chat initialization error:', error);
+            
+            // Remove typing indicator if it exists
+            const indicator = messagesContainer.querySelector('.typing-indicator');
+            if (indicator) {
+                messagesContainer.removeChild(indicator);
+            }
+            
+            // Show error message
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'chat-bubble bot-bubble';
+            errorMessage.innerHTML = "Welcome back! How can I help you today?";
+            messagesContainer.appendChild(errorMessage);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
     }
 
@@ -988,6 +1068,7 @@
     // Clear user session and reset to welcome screen
     function clearSession() {
         clearUserSession();
+        clearFormFilledStatus(); // Clear form filled status
         conversationId = '';
         
         // Clear messages
@@ -1052,6 +1133,9 @@
         
         // Initialize conversation with user data
         conversationId = createSessionId();
+        
+        // Mark that user has filled form
+        markFormAsFilled();
         
         // Save user session data to localStorage
         saveUserSession({
@@ -1292,6 +1376,19 @@
                 buttonText.textContent = 'Continue chatting';
             }
             console.log('Existing session found for user:', existingSession.userName);
+        } else if (hasUserFilledForm()) {
+            // User has filled form before but no saved session, update welcome message
+            const welcomeTitle = chatWindow.querySelector('.chat-welcome-title');
+            if (welcomeTitle) {
+                welcomeTitle.textContent = 'Welcome back!';
+            }
+            
+            const startButtonText = startChatButton.querySelector('svg').parentNode;
+            const buttonText = startButtonText.childNodes[startButtonText.childNodes.length - 1];
+            if (buttonText && buttonText.textContent) {
+                buttonText.textContent = 'Start chatting';
+            }
+            console.log('User has filled form before');
         } else {
             // New user, show normal welcome screen
             console.log('No existing session found');

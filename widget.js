@@ -1182,6 +1182,7 @@
         userMessage.textContent = messageText;
         messagesContainer.appendChild(userMessage);
         
+        
         // Show typing indicator
         const typingIndicator = createTypingIndicator();
         messagesContainer.appendChild(typingIndicator);

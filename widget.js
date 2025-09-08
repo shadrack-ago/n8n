@@ -416,7 +416,7 @@
 
         .chat-assist-widget .chat-footer-actions {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             gap: 10px;
         }
@@ -1076,7 +1076,12 @@
                 action: "sendMessage",
                 sessionId: conversationId,
                 route: settings.webhook.route,
-                chatInput: userInfoMessage
+                chatInput: userInfoMessage,
+                metadata: {
+                    userId: email,
+                    userName: name,
+                    isUserInfo: true
+                }
             };
             
             // Send user info
@@ -1172,7 +1177,11 @@
             action: "sendMessage",
             sessionId: conversationId,
             route: settings.webhook.route,
-            chatInput: messageWithUserInfo
+            chatInput: messageWithUserInfo,
+            metadata: {
+                userId: email,
+                userName: name
+            }
         };
 
         // Display user message

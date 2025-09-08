@@ -415,10 +415,7 @@
         }
 
         .chat-assist-widget .chat-footer-actions {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+            text-align: center;
         }
 
         .chat-assist-widget .clear-session-btn {

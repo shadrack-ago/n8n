@@ -674,7 +674,7 @@
     tooltip.style.fontSize = '13px';
     tooltip.style.display = 'none';
     tooltip.style.maxWidth = '240px';
-    tooltip.style.lineHeight = '1.4';
+    tooltip.style.lineHeight = '1.8';
     // this is the pop-up welcome message to be edited
     tooltip.innerHTML = `Welcome to CustomCX😊. How can we assist you today? <button aria-label="Close" style="margin-left:8px;background:none;border:none;cursor:pointer;color:var(--chat-widget-text,#1f2937);font-weight:600;">×</button>`;
     document.body.appendChild(tooltip);

@@ -414,9 +414,6 @@
             opacity: 1;
         }
 
-        .chat-assist-widget .chat-footer-actions {
-            text-align: center;
-        }
 
         .chat-assist-widget .clear-session-btn {
             background: none;
@@ -682,9 +679,7 @@
                 </button>
             </div>
             <div class="chat-footer">
-                <div class="chat-footer-actions">
-                    <a class="chat-footer-link" href="${settings.branding.poweredBy.link}" target="_blank">${settings.branding.poweredBy.text}</a>
-                </div>
+                <a class="chat-footer-link" href="${settings.branding.poweredBy.link}" target="_blank">${settings.branding.poweredBy.text}</a>
             </div>
         </div>
     `;

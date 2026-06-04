@@ -1,4 +1,3 @@
-
 // Interactive Chat Widget for n8n
 (function() {
     // Initialize widget only once
@@ -34,13 +33,12 @@
             font-family: 'Poppins', sans-serif;
         }
 
-         .chat-assist-widget .chat-window {
+        .chat-assist-widget .chat-window {
             position: fixed;
             bottom: 90px;
             z-index: 1000;
             width: 380px;
-            /*  height: 580px; */
-             height: 580px;
+            height: 580px;
             background: var(--chat-color-surface);
             border-radius: var(--chat-radius-lg);
             box-shadow: var(--chat-shadow-lg);
@@ -50,27 +48,8 @@
             flex-direction: column;
             transition: var(--chat-transition);
             opacity: 0;
-            height: min(520px, calc(100vh - 120px));
-            max-height: calc(100vh - 120px);
             transform: translateY(20px) scale(0.95);
         }
-        @media (max-width: 768px) {
-    .chat-assist-widget .chat-window {
-        width: calc(100vw - 40px);
-        left: 20px;
-        right: 20px;
-    }
-}
-
-/* For smaller mobile screens */
-@media (max-width: 480px) {
-    .chat-assist-widget .chat-window {
-        width: calc(100vw - 20px) ;
-        left: 10px ;
-        right: 10px ;
-        bottom: 80px ;
-    }
-}
 
         .chat-assist-widget .chat-window.right-side {
             right: 20px;
@@ -414,22 +393,6 @@
             opacity: 1;
         }
 
-
-        .chat-assist-widget .clear-session-btn {
-            background: none;
-            border: none;
-            color: var(--chat-color-text-light);
-            font-size: 12px;
-            cursor: pointer;
-            text-decoration: underline;
-            transition: var(--chat-transition);
-            font-family: inherit;
-        }
-
-        .chat-assist-widget .clear-session-btn:hover {
-            color: var(--chat-color-primary);
-        }
-
         .chat-assist-widget .suggested-questions {
             display: flex;
             flex-direction: column;
@@ -582,8 +545,8 @@
             welcomeText: '',
             responseTimeText: '',
             poweredBy: {
-                text: 'Powered by CustomCX',
-                link: 'https://customcx.com/'
+                text: 'Powered by n8n',
+                link: 'https://n8n.partnerlinks.io/fabimarkl'
             }
         },
         style: {
@@ -707,7 +670,6 @@
     const messageTextarea = chatWindow.querySelector('.chat-textarea');
     const sendButton = chatWindow.querySelector('.chat-submit');
     
-    
     // Registration form elements
     const registrationForm = chatWindow.querySelector('.registration-form');
     const userRegistration = chatWindow.querySelector('.user-registration');
@@ -717,125 +679,9 @@
     const nameError = chatWindow.querySelector('#name-error');
     const emailError = chatWindow.querySelector('#email-error');
 
-    // Local storage utilities for session management
-    const STORAGE_KEY = 'n8n_chat_widget_session';
-    const FORM_FILLED_KEY = 'n8n_chat_widget_form_filled';
-    const SESSION_EXPIRY_DAYS = 30; // Session expires after 30 days
-
     // Helper function to generate unique session ID
     function createSessionId() {
         return crypto.randomUUID();
-    }
-
-    // Save user session data to localStorage
-    function saveUserSession(userData) {
-        try {
-            const sessionData = {
-                ...userData,
-                timestamp: Date.now(),
-                sessionId: conversationId
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
-        } catch (error) {
-            console.warn('Failed to save session data:', error);
-        }
-    }
-
-    // Retrieve user session data from localStorage
-    function getUserSession() {
-        try {
-            console.log('Attempting to get session from localStorage with key:', STORAGE_KEY);
-            const sessionData = localStorage.getItem(STORAGE_KEY);
-            console.log('Raw session data from localStorage:', sessionData);
-            
-            if (!sessionData) {
-                console.log('No session data found in localStorage');
-                return null;
-            }
-
-            const parsedData = JSON.parse(sessionData);
-            console.log('Parsed session data:', parsedData);
-            
-            const now = Date.now();
-            const sessionAge = now - parsedData.timestamp;
-            const expiryTime = SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
-            
-            console.log('Session age:', sessionAge, 'ms, Expiry time:', expiryTime, 'ms');
-
-            // Check if session has expired
-            if (sessionAge > expiryTime) {
-                console.log('Session has expired, clearing...');
-                clearUserSession();
-                return null;
-            }
-
-            console.log('Valid session found');
-            return parsedData;
-        } catch (error) {
-            console.warn('Failed to retrieve session data:', error);
-            clearUserSession();
-            return null;
-        }
-    }
-
-    // Clear user session data from localStorage
-    function clearUserSession() {
-        try {
-            localStorage.removeItem(STORAGE_KEY);
-        } catch (error) {
-            console.warn('Failed to clear session data:', error);
-        }
-    }
-
-    // Mark that user has filled form
-    function markFormAsFilled() {
-        try {
-            localStorage.setItem(FORM_FILLED_KEY, 'true');
-        } catch (error) {
-            console.warn('Failed to save form filled status:', error);
-        }
-    }
-
-    // Check if user has filled form before
-    function hasUserFilledForm() {
-        try {
-            return localStorage.getItem(FORM_FILLED_KEY) === 'true';
-        } catch (error) {
-            console.warn('Failed to check form filled status:', error);
-            return false;
-        }
-    }
-
-    // Clear form filled status
-    function clearFormFilledStatus() {
-        try {
-            localStorage.removeItem(FORM_FILLED_KEY);
-        } catch (error) {
-            console.warn('Failed to clear form filled status:', error);
-        }
-    }
-
-    // Check if user has existing session and populate form if needed
-    function checkExistingSession() {
-        console.log('Checking for existing session...');
-        const existingSession = getUserSession();
-        console.log('Retrieved session data:', existingSession);
-        
-        if (existingSession) {
-            // Restore conversation ID
-            conversationId = existingSession.sessionId;
-            console.log('Restored conversation ID:', conversationId);
-            
-            // Populate form fields with existing data
-            if (nameInput && emailInput) {
-                nameInput.value = existingSession.userName || '';
-                emailInput.value = existingSession.userId || '';
-            }
-            
-            return existingSession;
-        }
-        console.log('No existing session found');
-        return null;
     }
 
     // Create typing indicator element
@@ -861,140 +707,11 @@
         });
     }
 
-    // Show registration form or skip to chat for returning users
+    // Show registration form
     function showRegistrationForm() {
-        // Check for existing session first
-        const existingSession = checkExistingSession();
-        
-        if (existingSession) {
-            // User has existing session, skip registration and go directly to chat
-            startChatWithExistingSession(existingSession);
-        } else if (hasUserFilledForm()) {
-            // User has filled form before but no saved session, go directly to chat
-            startChatWithoutSession();
-        } else {
-            // New user, show registration form
-            chatWelcome.style.display = 'none';
-            userRegistration.classList.add('active');
-        }
-    }
-
-    // Start chat without session data (for users who filled form before)
-    async function startChatWithoutSession() {
-        // Hide welcome screen and show chat interface
         chatWelcome.style.display = 'none';
-        userRegistration.classList.remove('active');
-        chatBody.classList.add('active');
-        showClearSessionButton();
-        
-        // Show typing indicator
-        const typingIndicator = createTypingIndicator();
-        messagesContainer.appendChild(typingIndicator);
-        
-        try {
-            // Initialize conversation
-            conversationId = createSessionId();
-            
-            // Show welcome message
-            const welcomeMessage = document.createElement('div');
-            welcomeMessage.className = 'chat-bubble bot-bubble';
-            welcomeMessage.innerHTML = linkifyText("Welcome back! How can I help you today?");
-            messagesContainer.appendChild(welcomeMessage);
-            
-            // Add suggested questions if available
-            if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
-                addSuggestedQuestions();
-            }
-            
-            // Remove typing indicator
-            messagesContainer.removeChild(typingIndicator);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        } catch (error) {
-            console.error('Chat initialization error:', error);
-            
-            // Remove typing indicator if it exists
-            const indicator = messagesContainer.querySelector('.typing-indicator');
-            if (indicator) {
-                messagesContainer.removeChild(indicator);
-            }
-            
-            // Show error message
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'chat-bubble bot-bubble';
-            errorMessage.innerHTML = "Welcome back! How can I help you today?";
-            messagesContainer.appendChild(errorMessage);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+        userRegistration.classList.add('active');
     }
-
-    // Start chat with existing session data (no server history load)
-    async function startChatWithExistingSession(sessionData) {
-        // Hide welcome screen and show chat interface
-        chatWelcome.style.display = 'none';
-        userRegistration.classList.remove('active');
-        chatBody.classList.add('active');
-        showClearSessionButton();
-
-        // Show brief welcome back message
-        const typingIndicator = createTypingIndicator();
-        messagesContainer.appendChild(typingIndicator);
-
-        const welcomeMessage = document.createElement('div');
-        welcomeMessage.className = 'chat-bubble bot-bubble';
-        welcomeMessage.innerHTML = linkifyText(`Welcome back, ${sessionData.userName}! How can I help you today?`);
-        
-        // Remove typing and append welcome
-        const indicator = messagesContainer.querySelector('.typing-indicator');
-        if (indicator) messagesContainer.removeChild(indicator);
-        messagesContainer.appendChild(welcomeMessage);
-
-        // Add suggested questions if available
-        if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
-            addSuggestedQuestions();
-        }
-
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    // Load previous conversation history
-    function loadPreviousConversation(conversationData) {
-        // This function can be customized based on how your n8n workflow returns conversation history
-        // For now, we'll show a simple welcome back message
-        const welcomeMessage = document.createElement('div');
-        welcomeMessage.className = 'chat-bubble bot-bubble';
-        welcomeMessage.innerHTML = linkifyText("Welcome back! Here's where we left off...");
-        messagesContainer.appendChild(welcomeMessage);
-        
-        // You can extend this to parse and display actual conversation history
-        // if your n8n workflow provides it in the response
-    }
-
-    // Add suggested questions to the chat
-    function addSuggestedQuestions() {
-        const suggestedQuestionsContainer = document.createElement('div');
-        suggestedQuestionsContainer.className = 'suggested-questions';
-        
-        settings.suggestedQuestions.forEach(question => {
-            const questionButton = document.createElement('button');
-            questionButton.className = 'suggested-question-btn';
-            questionButton.textContent = question;
-            questionButton.addEventListener('click', () => {
-                submitMessage(question);
-                // Remove the suggestions after clicking
-                if (suggestedQuestionsContainer.parentNode) {
-                    suggestedQuestionsContainer.parentNode.removeChild(suggestedQuestionsContainer);
-                }
-            });
-            suggestedQuestionsContainer.appendChild(questionButton);
-        });
-        
-        messagesContainer.appendChild(suggestedQuestionsContainer);
-    }
-
-    // Removed clear session feature for simpler UX
-
-    // No-op: clear session button removed
-    function showClearSessionButton() {}
 
     // Validate email format
     function isValidEmail(email) {
@@ -1040,29 +757,39 @@
         // Initialize conversation with user data
         conversationId = createSessionId();
         
-        // Mark that user has filled form
-        markFormAsFilled();
-        
-        // Save user session data to localStorage
-        saveUserSession({
-            userId: email,
-            userName: name
-        });
-        
-        // Skip loading previous session; proceed directly to chat UI
+        // First, load the session
+        const sessionData = [{
+            action: "loadPreviousSession",
+            sessionId: conversationId,
+            route: settings.webhook.route,
+            metadata: {
+                userId: email,
+                userName: name
+            }
+        }];
 
         try {
             // Hide registration form, show chat interface
             userRegistration.classList.remove('active');
             chatBody.classList.add('active');
-            showClearSessionButton();
             
             // Show typing indicator
             const typingIndicator = createTypingIndicator();
             messagesContainer.appendChild(typingIndicator);
-
-            // Send user info as first message - combine everything into chatInput (no prior session load)
-            const userInfoMessage = `User Registration:\nName: ${name}\nEmail: ${email}\nSessionId: ${conversationId}\nUserId: ${email}\nUserName: ${name}\nIsUserInfo: true`;
+            
+            // Load session
+            const sessionResponse = await fetch(settings.webhook.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(sessionData)
+            });
+            
+            const sessionResponseData = await sessionResponse.json();
+            
+            // Send user info as first message
+            const userInfoMessage = `Name: ${name}\nEmail: ${email}`;
             
             const userInfoData = {
                 action: "sendMessage",
@@ -1077,9 +804,6 @@
             };
             
             // Send user info
-            console.log('Sending user info request to:', settings.webhook.url);
-            console.log('User info data:', userInfoData);
-            
             const userInfoResponse = await fetch(settings.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -1088,14 +812,7 @@
                 body: JSON.stringify(userInfoData)
             });
             
-            console.log('User info response status:', userInfoResponse.status);
-            
-            if (!userInfoResponse.ok) {
-                throw new Error(`Server error: ${userInfoResponse.status} ${userInfoResponse.statusText}`);
-            }
-            
             const userInfoResponseData = await userInfoResponse.json();
-            console.log('User info response data:', userInfoResponseData);
             
             // Remove typing indicator
             messagesContainer.removeChild(typingIndicator);
@@ -1108,9 +825,26 @@
             botMessage.innerHTML = linkifyText(messageText);
             messagesContainer.appendChild(botMessage);
             
-            // Add suggested questions if configured
+            // Add sample questions if configured
             if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
-                addSuggestedQuestions();
+                const suggestedQuestionsContainer = document.createElement('div');
+                suggestedQuestionsContainer.className = 'suggested-questions';
+                
+                settings.suggestedQuestions.forEach(question => {
+                    const questionButton = document.createElement('button');
+                    questionButton.className = 'suggested-question-btn';
+                    questionButton.textContent = question;
+                    questionButton.addEventListener('click', () => {
+                        submitMessage(question);
+                        // Remove the suggestions after clicking
+                        if (suggestedQuestionsContainer.parentNode) {
+                            suggestedQuestionsContainer.parentNode.removeChild(suggestedQuestionsContainer);
+                        }
+                    });
+                    suggestedQuestionsContainer.appendChild(questionButton);
+                });
+                
+                messagesContainer.appendChild(suggestedQuestionsContainer);
             }
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -1123,27 +857,10 @@
                 messagesContainer.removeChild(indicator);
             }
             
-            // Show error message with more specific information
+            // Show error message
             const errorMessage = document.createElement('div');
             errorMessage.className = 'chat-bubble bot-bubble';
-            
-            if (error.message.includes('500')) {
-                errorMessage.innerHTML = `
-                    <strong>Server Error (500)</strong><br>
-                    There's an issue with our chat server. This could be:<br>
-                    • n8n workflow not running<br>
-                    • Webhook URL incorrect<br>
-                    • Server configuration issue<br><br>
-                    Please check your n8n setup and try again.
-                `;
-            } else {
-                errorMessage.innerHTML = `
-                    <strong>Connection Error</strong><br>
-                    ${error.message}<br><br>
-                    Please check your internet connection and try again.
-                `;
-            }
-            
+            errorMessage.textContent = "Sorry, I couldn't connect to the server. Please try again later.";
             messagesContainer.appendChild(errorMessage);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -1155,21 +872,15 @@
         
         isWaitingForResponse = true;
         
-        // Get user info from session or form
-        const existingSession = getUserSession();
-        const email = existingSession ? existingSession.userId : (emailInput ? emailInput.value.trim() : "");
-        const name = existingSession ? existingSession.userName : (nameInput ? nameInput.value.trim() : "");
+        // Get user info if available
+        const email = nameInput ? nameInput.value.trim() : "";
+        const name = emailInput ? emailInput.value.trim() : "";
         
-        // Include user info in the message if available
-        const messageWithUserInfo = email && name ? 
-            `[User: ${name} (${email})]\n${messageText}` : 
-            messageText;
-            
         const requestData = {
             action: "sendMessage",
             sessionId: conversationId,
             route: settings.webhook.route,
-            chatInput: messageWithUserInfo,
+            chatInput: messageText,
             metadata: {
                 userId: email,
                 userName: name
@@ -1182,16 +893,12 @@
         userMessage.textContent = messageText;
         messagesContainer.appendChild(userMessage);
         
-        
         // Show typing indicator
         const typingIndicator = createTypingIndicator();
         messagesContainer.appendChild(typingIndicator);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
         try {
-            console.log('Sending message to:', settings.webhook.url);
-            console.log('Message data:', requestData);
-            
             const response = await fetch(settings.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -1200,14 +907,7 @@
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Message response status:', response.status);
-            
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status} ${response.statusText}`);
-            }
-            
             const responseData = await response.json();
-            console.log('Message response data:', responseData);
             
             // Remove typing indicator
             messagesContainer.removeChild(typingIndicator);
@@ -1240,41 +940,6 @@
     function autoResizeTextarea() {
         messageTextarea.style.height = 'auto';
         messageTextarea.style.height = (messageTextarea.scrollHeight > 120 ? 120 : messageTextarea.scrollHeight) + 'px';
-    }
-
-    // Check for existing session on widget initialization
-    function initializeWidget() {
-        const existingSession = checkExistingSession();
-        if (existingSession) {
-            // User has existing session, update the welcome message and button text
-            const welcomeTitle = chatWindow.querySelector('.chat-welcome-title');
-            if (welcomeTitle) {
-                welcomeTitle.textContent = `Welcome back, ${existingSession.userName}!`;
-            }
-            
-            const startButtonText = startChatButton.querySelector('svg').parentNode;
-            const buttonText = startButtonText.childNodes[startButtonText.childNodes.length - 1];
-            if (buttonText && buttonText.textContent) {
-                buttonText.textContent = 'Continue chatting';
-            }
-            console.log('Existing session found for user:', existingSession.userName);
-        } else if (hasUserFilledForm()) {
-            // User has filled form before but no saved session, update welcome message
-            const welcomeTitle = chatWindow.querySelector('.chat-welcome-title');
-            if (welcomeTitle) {
-                welcomeTitle.textContent = 'Welcome back!';
-            }
-            
-            const startButtonText = startChatButton.querySelector('svg').parentNode;
-            const buttonText = startButtonText.childNodes[startButtonText.childNodes.length - 1];
-            if (buttonText && buttonText.textContent) {
-                buttonText.textContent = 'Start chatting';
-            }
-            console.log('User has filled form before');
-        } else {
-            // New user, show normal welcome screen
-            console.log('No existing session found');
-        }
     }
 
     // Event listeners
@@ -1315,9 +980,4 @@
             chatWindow.classList.remove('visible');
         });
     });
-
-    // Clear session button removed
-
-    // Initialize the widget
-    initializeWidget();
 })();

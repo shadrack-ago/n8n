@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget Integration</title>
+<!-- Widget Configuration -->
+<link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+</head> 
+<body>
+
+<script>
+    window.ChatWidgetConfig = {
+        webhook: {
+            url: 'https://agents.customcx.com/webhook/cda2cc78-0589-469a-a141-5cabc614a5bd/chat',
+            route: 'general'
+        },
+        branding: {
+            logo: 'YOUR_LOGO_URL',
+            name: 'Your Company Name',
+            welcomeText: 'Hi 👋, how can we help?',
+            responseTimeText: 'We typically respond right away'
+        },
+        style: {
+            primaryColor: '#854fff',
+            secondaryColor: '#6b3fd4',
+            position: 'right', // 'left' or 'right'
+            backgroundColor: '#ffffff',
+            fontColor: '#333333',
+          
+        }
+    };
+</script>
+
+<!-- Widget Script -->
+<script src="https://cdn.jsdelivr.net/gh/funtastic418/chat-widget@main/chat-widget.js"></script>
+</body>
+</html>

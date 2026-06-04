@@ -1,0 +1,24 @@
+[build]
+  publish = "."
+
+[[edge_functions]]
+  function = "widget"
+  path = "/widget/latest.js"
+
+[[edge_functions]]
+  function = "widget"
+  path = "/widget/v3.js"
+
+[[headers]]
+  for = "/widget/latest.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Cache-Control = "no-store"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/widget/v3.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Cache-Control = "no-store"
+    Access-Control-Allow-Origin = "*"
